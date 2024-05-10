@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -33,11 +33,19 @@ async function run() {
     await client.connect();
 
     const sportsCollection = client.db("dbBlog").collection("blog");
+    const commentsCollection = client.db("dbBlog").collection("comment");
 
     app.get("/blogs", async (req, res) => {
       const result = await sportsCollection.find().toArray();
       res.send(result);
     });
+
+    app.get("/blogs/:id",async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id:new ObjectId(id)};
+      const result = await sportsCollection.findOne(query);
+      res.send(result);
+    })
 
     app.post("/blogs", async (req, res) => {
       const blog = req.body;
@@ -45,6 +53,15 @@ async function run() {
       const result = await sportsCollection.insertOne(blog);
       res.send(result);
     });
+
+    app.post('/comments',async(req,res)=>{
+      const comments = req.body;
+      console.log(comments)
+      const result = await commentsCollection.insertOne(comments);
+      res.send(result);
+    })
+
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
