@@ -40,12 +40,12 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/blogs/:id",async(req,res)=>{
+    app.get("/blogs/:id", async (req, res) => {
       const id = req.params.id;
-      const query = {_id:new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const result = await sportsCollection.findOne(query);
       res.send(result);
-    })
+    });
 
     app.post("/blogs", async (req, res) => {
       const blog = req.body;
@@ -54,14 +54,20 @@ async function run() {
       res.send(result);
     });
 
-    app.post('/comments',async(req,res)=>{
+    app.get("/comments/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const query = { blogId: id };
+      const result = await commentsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.post("/comments", async (req, res) => {
       const comments = req.body;
-      console.log(comments)
+      console.log(comments);
       const result = await commentsCollection.insertOne(comments);
       res.send(result);
-    })
-
-
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
