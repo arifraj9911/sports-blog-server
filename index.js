@@ -48,6 +48,18 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/blogs',async(req,res)=>{
+      const searchText = req.query.text || {};
+      console.log(searchText);
+      const filter = {
+        $text:{
+          $search:searchText
+        }
+      }
+      const result = await sportsCollection.find(filter).toArray();
+      res.send(result)
+    })
+
     app.get("/update", async (req, res) => {
       const result = await sportsCollection.find().toArray();
       res.send(result);
