@@ -39,6 +39,11 @@ async function run() {
       const result = await sportsCollection.find().toArray();
       res.send(result);
     });
+    app.get("/featured", async (req, res) => {
+      const sort = { long_description: 1 };
+      const result = await sportsCollection.find().sort(sort).toArray();
+      res.send(result);
+    });
 
     app.get("/blogs/:id", async (req, res) => {
       const id = req.params.id;
