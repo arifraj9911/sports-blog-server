@@ -34,14 +34,10 @@ async function run() {
 
     const sportsCollection = client.db("dbBlog").collection("blog");
     const commentsCollection = client.db("dbBlog").collection("comment");
+    const wishlistCollection = client.db("dbBlog").collection("wishlist");
 
     app.get("/blogs", async (req, res) => {
       const result = await sportsCollection.find().toArray();
-      res.send(result);
-    });
-    app.get("/featured", async (req, res) => {
-      const sort = { long_description: 1 };
-      const result = await sportsCollection.find().sort(sort).toArray();
       res.send(result);
     });
 
@@ -107,6 +103,19 @@ async function run() {
       const result = await commentsCollection.insertOne(comments);
       res.send(result);
     });
+
+    app.get("/featured", async (req, res) => {
+      const sort = { long_description: 1 };
+      const result = await sportsCollection.find().sort(sort).toArray();
+      res.send(result);
+    });
+
+    app.post('/wishlist',async(req,res)=>{
+      const blogs = req.body;
+      // console.log(blogs)
+      const result = await wishlistCollection.insertOne(blogs);
+      res.send(result);
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
