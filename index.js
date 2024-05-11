@@ -71,7 +71,8 @@ async function run() {
       res
         .cookie("token", token, {
           httpOnly: true,
-          secure: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         })
         .send({ success: true });
     });
@@ -95,7 +96,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/update", logger, verify, async (req, res) => {
+    app.get("/update", async (req, res) => {
       const result = await sportsCollection.find().toArray();
       res.send(result);
     });
@@ -152,9 +153,19 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/featured", async (req, res) => {
-      const sort = { long_description: 1 };
-      const result = await sportsCollection.find().sort(sort).toArray();
+    app.get("/featured", logger, verify, async (req, res) => {
+      const result = await sportsCollection
+        .aggregate([
+          {
+            $addFields: {
+              textLength: { $strLenCP: "$long_description" },
+            },
+          },
+          {
+            $sort: { textLength: -1 },
+          },
+        ])
+        .toArray();
       res.send(result);
     });
 
