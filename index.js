@@ -174,7 +174,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/wishlist/:email", async (req, res) => {
+    app.get("/wishlist/:email",logger,verify, async (req, res) => {
       const email = req.params.email;
       const query = { userEmail: email };
 
@@ -203,7 +203,7 @@ async function run() {
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
   } finally {
-    // Ensures that the client will close when you finish/error
+
     // await client.close();
   }
 }
