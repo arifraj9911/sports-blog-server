@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
@@ -11,10 +13,11 @@ app.use(
   cors({
     origin: ["http://localhost:5173"],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    withCredentials: true,
+    credentials: true,
   })
 );
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.hcfrddp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -27,6 +30,28 @@ const client = new MongoClient(uri, {
   },
 });
 
+// middleware
+const logger = async (req, res, next) => {
+  console.log("called: ", req.hostname, req.originalUrl);
+  next();
+};
+
+const verify = async (req, res, next) => {
+  const token = req.cookies?.token;
+  console.log("token from verify ", token);
+  if (!token) {
+    return res.status(401).send({ message: "not authorized" });
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).send({ message: "unauthorized" });
+    }
+    req.user = decoded;
+    // console.log(decoded);
+    next();
+  });
+};
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -36,6 +61,28 @@ async function run() {
     const commentsCollection = client.db("dbBlog").collection("comment");
     const wishlistCollection = client.db("dbBlog").collection("wishlist");
 
+    // jwt api
+    app.post("/jwt", logger, async (req, res) => {
+      const user = req.body;
+      // console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: false,
+        })
+        .send({ success: true });
+    });
+
+    app.post("/logout", async (req, res) => {
+      const user = req.body;
+      console.log("logging user ", user);
+      res.clearCookie("token", { maxAge: 0 }).send({ success: true });
+    });
+
+    // blogs api
     app.get("/blogs", async (req, res) => {
       const result = await sportsCollection.find().toArray();
       res.send(result);
@@ -48,25 +95,14 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/blogs',async(req,res)=>{
-      const searchText = req.query.text || {};
-      console.log(searchText);
-      const filter = {
-        $text:{
-          $search:searchText
-        }
-      }
-      const result = await sportsCollection.find(filter).toArray();
-      res.send(result)
-    })
-
-    app.get("/update", async (req, res) => {
+    app.get("/update", logger, verify, async (req, res) => {
       const result = await sportsCollection.find().toArray();
       res.send(result);
     });
 
-    app.get("/update/:id", async (req, res) => {
+    app.get("/update/:id", logger, verify, async (req, res) => {
       const id = req.params.id;
+      console.log(id);
       const query = { _id: new ObjectId(id) };
       const result = await sportsCollection.find(query).toArray();
       res.send(result);
