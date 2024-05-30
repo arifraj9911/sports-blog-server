@@ -11,7 +11,7 @@ const port = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["http://localhost:5173", "https://sports-blog-f1e26.web.app"],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
   })
@@ -55,7 +55,7 @@ const verify = async (req, res, next) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const sportsCollection = client.db("dbBlog").collection("blog");
     const commentsCollection = client.db("dbBlog").collection("comment");
@@ -85,7 +85,11 @@ async function run() {
 
     // blogs api
     app.get("/blogs", async (req, res) => {
-      const result = await sportsCollection.find().toArray();
+      const result = await sportsCollection
+        .find()
+        .skip(parseInt(req.query.page) * parseInt(req.query.size))
+        .limit(parseInt(req.query.size))
+        .toArray();
       res.send(result);
     });
 
@@ -94,6 +98,12 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const result = await sportsCollection.findOne(query);
       res.send(result);
+    });
+
+    app.get("/blogsCount", async (req, res) => {
+      const count = await sportsCollection.estimatedDocumentCount();
+      console.log(count);
+      res.send({ count });
     });
 
     app.get("/update", async (req, res) => {
@@ -174,7 +184,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/wishlist/:email",logger,verify, async (req, res) => {
+    app.get("/wishlist/:email", logger, verify, async (req, res) => {
       const email = req.params.email;
       const query = { userEmail: email };
 
@@ -198,12 +208,11 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
   } finally {
-
     // await client.close();
   }
 }
